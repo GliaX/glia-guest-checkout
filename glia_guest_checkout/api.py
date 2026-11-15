@@ -15,6 +15,7 @@ from glia_guest_checkout.cart import (
 	update_item,
 )
 from glia_guest_checkout.checkout import place_order
+from glia_guest_checkout.newsletter import subscribe
 
 
 def _require_guest():
@@ -51,6 +52,13 @@ def start_one_time_donation(amount, campaign=None, currency=None):
 	"""Add a one-time gift to the guest cart (donation bar "One-time")."""
 	_require_guest()
 	return start_donation(amount, campaign, currency)
+
+
+@frappe.whitelist(allow_guest=True)
+@rate_limit(key="email", ip_based=False, limit=3, seconds=3600, methods=["POST"])
+def subscribe_newsletter(email, source="Website footer"):
+	"""Validated newsletter signup; the footer used to post raw REST."""
+	return subscribe(email, source)
 
 
 @frappe.whitelist(allow_guest=True)
