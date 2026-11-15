@@ -1,0 +1,25 @@
+{
+ "doctype": "DocType",
+ "name": "Guest Cart",
+ "module": "Glia Guest Checkout",
+ "autoname": "field:cart_id",
+ "naming_rule": "By fieldname",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "fields": [
+  {"fieldname": "cart_id", "fieldtype": "Data", "label": "Cart ID", "reqd": 1, "unique": 1, "in_list_view": 1},
+  {"fieldname": "status", "fieldtype": "Select", "label": "Status", "options": "Open\nConverted\nAbandoned", "default": "Open", "in_list_view": 1},
+  {"fieldname": "email", "fieldtype": "Data", "label": "Email"},
+  {"fieldname": "customer", "fieldtype": "Link", "label": "Customer", "options": "Customer"},
+  {"fieldname": "contact", "fieldtype": "Link", "label": "Contact", "options": "Contact"},
+  {"fieldname": "currency", "fieldtype": "Link", "label": "Currency", "options": "Currency"},
+  {"fieldname": "total", "fieldtype": "Currency", "label": "Total"},
+  {"fieldname": "sales_order", "fieldtype": "Link", "label": "Sales Order", "options": "Sales Order", "read_only": 1},
+  {"fieldname": "payment_request", "fieldtype": "Link", "label": "Payment Request", "options": "Payment Request", "read_only": 1},
+  {"fieldname": "order_token", "fieldtype": "Data", "label": "Order Token", "read_only": 1},
+  {"fieldname": "items", "fieldtype": "Table", "label": "Items", "options": "Guest Cart Item"}
+ ],
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "email": 1, "print": 1, "report": 1, "share": 1, "export": 1}
+ ]
+}

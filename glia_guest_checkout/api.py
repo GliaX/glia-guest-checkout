@@ -1,0 +1,60 @@
+"""Whitelisted guest-cart and checkout endpoints (no login required)."""
+
+from __future__ import annotations
+
+import frappe
+
+from glia_guest_checkout.cart import add_item, get_cart, remove_item, update_item
+from glia_guest_checkout.checkout import place_order
+
+
+def _require_guest():
+	if frappe.session.user != "Guest":
+		frappe.throw("Guest checkout is only available when signed out.")
+
+
+@frappe.whitelist(allow_guest=True)
+def get_guest_cart():
+	_require_guest()
+	return get_cart()
+
+
+@frappe.whitelist(allow_guest=True)
+def add_to_cart(item_code, qty=1):
+	_require_guest()
+	return add_item(item_code, qty)
+
+
+@frappe.whitelist(allow_guest=True)
+def update_guest_cart(item_code, qty=1):
+	_require_guest()
+	return update_item(item_code, qty)
+
+
+@frappe.whitelist(allow_guest=True)
+def remove_from_cart(item_code):
+	_require_guest()
+	return remove_item(item_code)
+
+
+@frappe.whitelist(allow_guest=True)
+def guest_checkout(email, full_name, address_line1, city, country, address_line2=None,
+                   state=None, pincode=None, phone=None):
+	_require_guest()
+	try:
+		return place_order(
+			{
+				"email": email,
+			"full_name": full_name,
+			"address_line1": address_line1,
+			"address_line2": address_line2,
+			"city": city,
+			"state": state,
+			"pincode": pincode,
+			"country": country,
+				"phone": phone,
+			}
+		)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "guest checkout api")
+		raise

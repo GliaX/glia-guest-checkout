@@ -1,0 +1,18 @@
+{
+ "doctype": "DocType",
+ "name": "Guest Cart Item",
+ "module": "Glia Guest Checkout",
+ "istable": 1,
+ "fields": [
+  {"fieldname": "item_code", "fieldtype": "Link", "label": "Item Code", "options": "Item", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "item_name", "fieldtype": "Data", "label": "Item Name", "in_list_view": 1},
+  {"fieldname": "qty", "fieldtype": "Float", "label": "Qty", "default": "1", "in_list_view": 1},
+  {"fieldname": "rate", "fieldtype": "Currency", "label": "Rate", "in_list_view": 1},
+  {"fieldname": "amount", "fieldtype": "Currency", "label": "Amount", "in_list_view": 1},
+  {"fieldname": "warehouse", "fieldtype": "Link", "label": "Warehouse", "options": "Warehouse"},
+  {"fieldname": "image", "fieldtype": "Attach Image", "label": "Image"},
+  {"fieldname": "route", "fieldtype": "Data", "label": "Route"},
+  {"fieldname": "additional_notes", "fieldtype": "Small Text", "label": "Additional Notes"}
+ ],
+ "permissions": []
+}

@@ -1,0 +1,49 @@
+{% extends "templates/web.html" %}
+
+{% block title %}{{ _("Order") }}{% endblock %}
+
+{% block page_content %}
+<div class="guest-cart-page">
+	<div class="glia-container guest-order-page">
+		<h1>{{ _("Thank you") }}</h1>
+		<p class="guest-order-lead">
+			{% if sales_order %}
+				{{ _("Your order") }} <strong>{{ sales_order.name }}</strong>.
+			{% endif %}
+		</p>
+
+		{% if sales_order %}
+		<div class="guest-order-status">
+			<span>{{ _("Status") }}:</span>
+			<strong>{{ sales_order.status }}</strong>
+		</div>
+		{% endif %}
+
+		<table class="guest-cart-table">
+			<thead>
+				<tr><th>{{ _("Item") }}</th><th>{{ _("Qty") }}</th><th>{{ _("Total") }}</th></tr>
+			</thead>
+			<tbody>
+				{% for item in items %}
+				<tr>
+					<td>{{ item.item_name }}</td>
+					<td>{{ item.qty }}</td>
+					<td>{{ frappe.utils.fmt_money(item.amount, currency=cart.currency) }}</td>
+				</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+
+		<div class="guest-cart-total-row">
+			<span>{{ _("Total") }}</span>
+			<strong>{{ frappe.utils.fmt_money(cart.total, currency=cart.currency) }}</strong>
+		</div>
+
+		{% if payment_url and payment_request and payment_request.status not in ("Paid", "Cancelled") %}
+		<p><a class="glia-btn" href="{{ payment_url }}">{{ _("Complete payment") }}</a></p>
+		{% endif %}
+
+		<p><a href="/all-products">{{ _("Continue shopping") }}</a></p>
+	</div>
+</div>
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends "templates/web.html" %}
+
+{% block title %}{{ _("Your Cart") }}{% endblock %}
+
+{% block page_content %}
+<div class="guest-cart-page">
+	<div class="glia-container">
+		<h1 class="guest-cart-title">{{ _("Your Cart") }}</h1>
+
+		<div id="guest-cart-app">
+			<div id="guest-cart-empty" class="guest-cart-empty"{% if cart.items %} hidden{% endif %}>
+				<p>{{ _("Your cart is empty.") }}</p>
+				<a class="glia-btn" href="/all-products">{{ _("Continue shopping") }}</a>
+			</div>
+
+			<div id="guest-cart-content" class="guest-cart-layout"{% if not cart.items %} hidden{% endif %}>
+				<div class="guest-cart-items-wrap">
+					<table class="guest-cart-table">
+						<thead>
+							<tr>
+								<th colspan="2">{{ _("Item") }}</th>
+								<th>{{ _("Qty") }}</th>
+								<th>{{ _("Price") }}</th>
+								<th>{{ _("Total") }}</th>
+								<th></th>
+							</tr>
+						</thead>
+						<tbody id="guest-cart-items"></tbody>
+					</table>
+					<div class="guest-cart-total-row">
+						<span>{{ _("Subtotal") }}</span>
+						<strong id="guest-cart-total"></strong>
+					</div>
+					<p class="guest-cart-note">{{ _("Taxes and shipping are calculated at checkout.") }}</p>
+				</div>
+
+				<form id="guest-checkout-form" class="guest-checkout-form" novalidate>
+					<h2>{{ _("Checkout") }}</h2>
+					<p class="guest-checkout-intro">{{ _("No account needed. We will email your receipt.") }}</p>
+
+					<div class="guest-field">
+						<label for="gc-email">{{ _("Email") }}</label>
+						<input id="gc-email" name="email" type="email" required autocomplete="email">
+					</div>
+					<div class="guest-field">
+						<label for="gc-name">{{ _("Full name") }}</label>
+						<input id="gc-name" name="full_name" type="text" required autocomplete="name">
+					</div>
+					<div class="guest-field">
+						<label for="gc-address">{{ _("Address") }}</label>
+						<input id="gc-address" name="address_line1" type="text" required autocomplete="address-line1">
+					</div>
+					<div class="guest-field">
+						<label for="gc-address2">{{ _("Apartment, suite, etc.") }}</label>
+						<input id="gc-address2" name="address_line2" type="text" autocomplete="address-line2">
+					</div>
+					<div class="guest-field-row">
+						<div class="guest-field">
+							<label for="gc-city">{{ _("City") }}</label>
+							<input id="gc-city" name="city" type="text" required autocomplete="address-level2">
+						</div>
+						<div class="guest-field">
+							<label for="gc-state">{{ _("Province / State") }}</label>
+							<input id="gc-state" name="state" type="text" autocomplete="address-level1">
+						</div>
+					</div>
+					<div class="guest-field-row">
+						<div class="guest-field">
+							<label for="gc-postal">{{ _("Postal code") }}</label>
+							<input id="gc-postal" name="pincode" type="text" autocomplete="postal-code">
+						</div>
+						<div class="guest-field">
+							<label for="gc-country">{{ _("Country") }}</label>
+							<input id="gc-country" name="country" type="text" value="Canada" required autocomplete="country-name">
+						</div>
+					</div>
+					<div class="guest-field">
+						<label for="gc-phone">{{ _("Phone (optional)") }}</label>
+						<input id="gc-phone" name="phone" type="tel" autocomplete="tel">
+					</div>
+
+					<div id="guest-checkout-error" class="guest-checkout-error" hidden></div>
+					<button type="submit" class="glia-btn guest-checkout-submit">{{ _("Continue to payment") }}</button>
+				</form>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %}
