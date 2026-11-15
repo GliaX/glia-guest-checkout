@@ -54,7 +54,9 @@ def start_one_time_donation(amount, campaign=None, currency=None):
 
 
 @frappe.whitelist(allow_guest=True)
-@rate_limit(limit=5, seconds=3600)
+# Limit per address, not per IP: behind the ingress every request looks like an
+# ingress-pod IP, so an IP limit is split across replicas and barely applies.
+@rate_limit(key="email", ip_based=False, limit=3, seconds=3600, methods=["POST"])
 def request_account_claim(email):
 	"""Email a password-reset (claim) link to an imported customer's address."""
 	return claim(email)
