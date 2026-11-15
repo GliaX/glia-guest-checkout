@@ -4,7 +4,13 @@ from __future__ import annotations
 
 import frappe
 
-from glia_guest_checkout.cart import add_item, get_cart, remove_item, update_item
+from glia_guest_checkout.cart import (
+	add_item,
+	get_cart,
+	remove_item,
+	start_donation,
+	update_item,
+)
 from glia_guest_checkout.checkout import place_order
 
 
@@ -35,6 +41,13 @@ def update_guest_cart(item_code, qty=1):
 def remove_from_cart(item_code):
 	_require_guest()
 	return remove_item(item_code)
+
+
+@frappe.whitelist(allow_guest=True)
+def start_one_time_donation(amount, campaign=None, currency=None):
+	"""Add a one-time gift to the guest cart (donation bar "One-time")."""
+	_require_guest()
+	return start_donation(amount, campaign, currency)
 
 
 @frappe.whitelist(allow_guest=True)

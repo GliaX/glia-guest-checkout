@@ -236,6 +236,58 @@ def add_item(item_code, qty=1, additional_notes=None):
 	return cart_to_dict(cart)
 
 
+def donation_variant(template_code: str, amount, currency=None):
+	"""Find the priced variant of a donation product that matches an amount.
+
+	Shopify donation products are variant-per-amount ($10/$25/$50/...), so the
+	amount the donor picked in the donation bar maps to exactly one variant. We
+	match on the selling rate rather than the variant title, because the title
+	wording has changed between imports.
+	"""
+	target = round(flt(amount), 2)
+	if target <= 0:
+		return None
+	variants = frappe.get_all(
+		"Item",
+		filters={"variant_of": template_code, "disabled": 0},
+		pluck="name",
+		limit_page_length=0,
+	)
+	for code in variants:
+		rate = round(item_rate(code, currency), 2)
+		if rate == target:
+			return code
+	return None
+
+
+def start_donation(amount, campaign=None, currency=None):
+	"""Add a one-time gift of `amount` to the guest cart and return the cart URL."""
+	target = round(flt(amount), 2)
+	if target <= 0:
+		frappe.throw("Choose an amount to continue.")
+
+	template = campaign or "donate-glia-project"
+	if not frappe.db.exists("Item", template):
+		frappe.throw("That appeal is not available right now.")
+
+	currency = currency or _currency()
+	variant = donation_variant(template, target, currency)
+	if not variant:
+		frappe.throw(
+			f"We do not have a {currency} {target:.0f} option for this appeal. "
+			"Please pick one of the preset amounts, or email info@glia.org to give another amount."
+		)
+
+	cart = add_item(variant, 1)
+	return {
+		"cart_url": "/guest_cart",
+		"item_code": variant,
+		"amount": target,
+		"currency": currency,
+		"cart": cart,
+	}
+
+
 def update_item(item_code, qty):
 	cart = _open_cart(create=False)
 	if not cart:
