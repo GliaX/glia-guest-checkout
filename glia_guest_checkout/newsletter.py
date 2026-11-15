@@ -14,7 +14,10 @@ from frappe.utils import validate_email_address
 DOCTYPE = "Newsletter Signup"
 
 
-def subscribe(email: str, source: str = "Website footer"):
+def subscribe(email: str, source: str = "Website footer", consent=None):
+	# CASL: express consent must be recorded, not assumed.
+	if not consent:
+		frappe.throw("Please tick the box to agree to receive emails from Glia.", frappe.ValidationError)
 	email = (email or "").strip()
 	# Raises a ValidationError with a friendly message for malformed addresses.
 	validate_email_address(email, throw=True)

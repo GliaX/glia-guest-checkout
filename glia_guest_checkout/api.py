@@ -56,9 +56,9 @@ def start_one_time_donation(amount, campaign=None, currency=None):
 
 @frappe.whitelist(allow_guest=True)
 @rate_limit(key="email", ip_based=False, limit=3, seconds=3600, methods=["POST"])
-def subscribe_newsletter(email, source="Website footer"):
-	"""Validated newsletter signup; the footer used to post raw REST."""
-	return subscribe(email, source)
+def subscribe_newsletter(email, source="Website footer", consent=None):
+	"""Validated newsletter signup with recorded CASL consent."""
+	return subscribe(email, source, consent)
 
 
 @frappe.whitelist(allow_guest=True)
