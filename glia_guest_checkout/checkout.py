@@ -194,6 +194,14 @@ def place_order(data):
 		quotation.flags.ignore_permissions = True
 		apply_cart_settings(customer, quotation)
 		quotation.insert(ignore_permissions=True)
+		# Never let an unpriced line through to a payment: the shopper would be
+		# asked to pay 0 CAD for a real product.
+		unpriced = [row.item_code for row in quotation.get("items") if flt(row.rate) <= 0]
+		if unpriced:
+			frappe.throw(
+				"These products do not have a price yet, so the order cannot be placed: "
+				+ ", ".join(unpriced)
+			)
 		quotation.submit()
 
 		sales_order = frappe.get_doc(_make_sales_order(quotation.name, ignore_permissions=True))

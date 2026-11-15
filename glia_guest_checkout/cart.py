@@ -194,6 +194,11 @@ def add_item(item_code, qty=1, additional_notes=None):
 	item = frappe.get_cached_doc("Item", item_code)
 	if item.disabled:
 		frappe.throw("That product is no longer available.")
+	# A variant template has no price of its own and must never be sold directly:
+	# the shopper has to pick the size/colour/amount first, and the priced
+	# document is the variant item.
+	if item.get("has_variants") and not item.get("variant_of"):
+		frappe.throw("Please choose the options (size, colour or amount) for this product first.")
 
 	web_item = _web_item(item_code)
 	if not web_item or not frappe.db.get_value("Website Item", web_item.name, "published"):
@@ -201,6 +206,9 @@ def add_item(item_code, qty=1, additional_notes=None):
 
 	qty = max(1, cint(qty))
 	cart = _open_cart(create=True)
+	rate = item_rate(item_code, cart.currency)
+	if rate <= 0:
+		frappe.throw("This product does not have a price yet. Please contact us to order it.")
 	line = next((row for row in cart.items if row.item_code == item_code), None)
 	if line:
 		line.qty = cint(line.qty) + qty
@@ -212,7 +220,7 @@ def add_item(item_code, qty=1, additional_notes=None):
 				"item_code": item_code,
 				"item_name": web_item.item_name or item.item_name,
 				"qty": qty,
-				"rate": item_rate(item_code, cart.currency),
+				"rate": rate,
 				"warehouse": valid_warehouse(web_item.website_warehouse),
 				"image": web_item.website_image,
 				"route": web_item.route,
