@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import frappe
 
+from frappe.rate_limiter import rate_limit
+
+from glia_guest_checkout.accounts import claim
 from glia_guest_checkout.cart import (
 	add_item,
 	get_cart,
@@ -48,6 +51,13 @@ def start_one_time_donation(amount, campaign=None, currency=None):
 	"""Add a one-time gift to the guest cart (donation bar "One-time")."""
 	_require_guest()
 	return start_donation(amount, campaign, currency)
+
+
+@frappe.whitelist(allow_guest=True)
+@rate_limit(limit=5, seconds=3600)
+def request_account_claim(email):
+	"""Email a password-reset (claim) link to an imported customer's address."""
+	return claim(email)
 
 
 @frappe.whitelist(allow_guest=True)

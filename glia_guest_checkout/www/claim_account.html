@@ -1,0 +1,101 @@
+{% extends "templates/web.html" %}
+
+{% block title %}Your Glia account{% endblock %}
+
+{% block page_content %}
+<div class="glia-claim">
+	<h1>Sign in to your Glia account</h1>
+	<p class="glia-claim__lead">
+		Bought something from Glia before, or given monthly? Your account moved with the shop.
+		Enter the email you used and we will send you a link to set a password.
+	</p>
+
+	<form class="glia-claim__form" id="glia-claim-form" novalidate>
+		<label class="glia-claim__label" for="glia-claim-email">Email address</label>
+		<input class="glia-claim__input" id="glia-claim-email" name="email" type="email"
+			autocomplete="email" required placeholder="you@example.com">
+		<button class="glia-claim__button" id="glia-claim-submit" type="submit">Email me a link</button>
+	</form>
+
+	<p class="glia-claim__note" id="glia-claim-status" role="status" aria-live="polite"></p>
+
+	<p class="glia-claim__fine">
+		The link lets you set a password and see your order history. If you would rather not have
+		an account, you can always <a href="/guest_cart">check out as a guest</a>.
+		Questions? <a href="/contact">Contact us</a> or email
+		<a href="mailto:info@glia.org">info@glia.org</a>.
+	</p>
+</div>
+
+<style>
+.glia-claim { max-width: 620px; margin: 56px auto 96px; padding: 0 20px; }
+.glia-claim h1 { font-size: clamp(26px, 3vw, 36px); color: #032e38; margin: 0 0 14px; }
+.glia-claim__lead { font-size: 19px; line-height: 1.6; color: #3d5157; margin: 0 0 26px; }
+.glia-claim__form { display: grid; gap: 12px; }
+.glia-claim__label { font-size: 14px; color: #5b6b70; }
+.glia-claim__input {
+	border: 1px solid #c8d2d4; border-radius: 8px; font: inherit; padding: 12px 14px; width: 100%;
+}
+.glia-claim__input:focus { border-color: #00a89f; outline: none; }
+.glia-claim__button {
+	background: #00a89f; border: none; border-radius: 8px; color: #fff; cursor: pointer;
+	font: inherit; font-weight: 600; padding: 13px 20px; width: fit-content;
+}
+.glia-claim__button[disabled] { opacity: .6; cursor: default; }
+.glia-claim__note { color: #12372a; margin: 18px 0 0; min-height: 1.4em; }
+.glia-claim__note--error { color: #b3261e; }
+.glia-claim__fine { color: #5b6b70; font-size: 14px; line-height: 1.7; margin-top: 26px; }
+.glia-claim__fine a { color: #00a89f; text-decoration: underline; text-underline-offset: 3px; }
+</style>
+
+<script>
+(function () {
+	var form = document.getElementById("glia-claim-form");
+	var input = document.getElementById("glia-claim-email");
+	var button = document.getElementById("glia-claim-submit");
+	var status = document.getElementById("glia-claim-status");
+	if (!form) return;
+
+	function say(text, isError) {
+		status.textContent = text || "";
+		status.className = "glia-claim__note" + (isError ? " glia-claim__note--error" : "");
+	}
+
+	function parseServerMessage(err) {
+		try {
+			var raw = err && err.responseJSON && err.responseJSON._server_messages;
+			if (!raw) return null;
+			var list = JSON.parse(raw);
+			var first = JSON.parse(list[0]);
+			if (first && first.message) return String(first.message).replace(/<[^>]+>/g, "");
+		} catch (e) { /* ignore */ }
+		return null;
+	}
+
+	form.addEventListener("submit", function (event) {
+		event.preventDefault();
+		var email = (input.value || "").trim();
+		if (!email || email.indexOf("@") < 1) {
+			say("Please enter the email address you used with Glia.", true);
+			input.focus();
+			return;
+		}
+		button.disabled = true;
+		say("Sending…");
+		frappe.call({
+			method: "glia_guest_checkout.api.request_account_claim",
+			args: { email: email },
+			callback: function () {
+				button.disabled = false;
+				say("If that address is on file with Glia, a link to set your password is on its way. "
+					+ "It expires shortly, so request another if it does not arrive.");
+			},
+			error: function (err) {
+				button.disabled = false;
+				say(parseServerMessage(err) || "Something went wrong — please try again, or email info@glia.org.", true);
+			}
+		});
+	});
+})();
+</script>
+{% endblock %}
