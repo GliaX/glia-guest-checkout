@@ -11,7 +11,8 @@ from erpnext.accounts.utils import get_account_currency
 from erpnext.selling.doctype.quotation.quotation import _make_sales_order
 from webshop.webshop.shopping_cart.cart import apply_cart_settings
 
-from glia_guest_checkout.cart import _open_cart, set_cart_cookie, valid_warehouse
+from glia_guest_checkout.cart import _open_cart
+from glia_guest_checkout.taxes import apply_to_sales_order, normalize_country, normalize_state, set_cart_cookie, valid_warehouse
 
 
 def _website_email(customer_name, email):
@@ -153,6 +154,13 @@ def place_order(data):
 	if not (data.country or "").strip():
 		data.country = "Canada"
 
+	# Tax is charged at the destination province, so the address must carry the
+	# canonical name (Tax Rules match on it) and Canada needs a province.
+	data.country = normalize_country(data.country)
+	data.state = normalize_state(data.get("state"), data.country) or ""
+	if data.country == "Canada" and not data.state:
+		frappe.throw("Please choose your province so we can apply the correct tax.")
+
 	webshop = frappe.get_cached_doc("Webshop Settings")
 	currency = cart.currency or frappe.db.get_value("Company", webshop.company, "default_currency") or "CAD"
 
@@ -207,6 +215,10 @@ def place_order(data):
 		sales_order = frappe.get_doc(_make_sales_order(quotation.name, ignore_permissions=True))
 		sales_order.order_type = "Shopping Cart"
 		sales_order.flags.ignore_permissions = True
+		# Canadian merchandise is taxed at the destination province; donations and
+		# exports get no tax rows. NOTE: when shipping is charged it must be added to
+		# the taxable base (as a taxable line), not left outside the tax rows.
+		apply_to_sales_order(sales_order, data.country, data.state)
 		sales_order.insert(ignore_permissions=True)
 		sales_order.submit()
 

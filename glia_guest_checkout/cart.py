@@ -140,6 +140,20 @@ def item_rate(item_code, currency=None):
 	return flt(rate or 0)
 
 
+def _assert_compatible_taxability(cart, item_code):
+	 """A single order is either taxable goods or untaxed gifts.
+
+	 ERPNext applies tax at document level, so a mixed cart would either tax the
+	 donation or leave the goods untaxed. Refuse the mix instead of mis-billing.
+	 """
+	 from glia_guest_checkout.taxes import cart_taxability, is_taxable
+
+	 existing = cart_taxability([line.item_code for line in cart.get("items", [])])
+	 incoming = is_taxable(item_code)
+	 if existing and incoming not in existing:
+		 frappe.throw("Please buy merchandise and donate in separate orders — taxes are applied per order.")
+
+
 def _set_line(item, qty, rate):
 	item.qty = flt(qty)
 	item.rate = flt(rate)
@@ -206,6 +220,7 @@ def add_item(item_code, qty=1, additional_notes=None):
 
 	qty = max(1, cint(qty))
 	cart = _open_cart(create=True)
+	_assert_compatible_taxability(cart, item_code)
 	rate = item_rate(item_code, cart.currency)
 	if rate <= 0:
 		frappe.throw("This product does not have a price yet. Please contact us to order it.")
