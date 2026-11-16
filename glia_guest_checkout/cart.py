@@ -171,6 +171,20 @@ def _recalculate(cart):
 	return count
 
 
+
+
+def _shipping_estimate(cart):
+	from glia_guest_checkout.shipping import parcel_estimate
+	from glia_guest_checkout.taxes import is_taxable
+
+	lines = [{"item_code": i.item_code, "qty": cint(i.qty)} for i in cart.get("items", [])]
+	# donations/contributions never ship
+	shippable = [ln for ln in lines if is_taxable(ln["item_code"])]
+	if not shippable:
+		return None
+	return parcel_estimate(shippable)
+
+
 def cart_to_dict(cart):
 	if not cart:
 		return {"items": [], "total": 0, "currency": _currency(), "count": 0, "status": "Open"}
@@ -192,6 +206,9 @@ def cart_to_dict(cart):
 		"currency": cart.currency or _currency(),
 		"count": sum(cint(item.qty) for item in cart.get("items", [])),
 		"status": cart.status,
+		# parcel make-up so the storefront/shipping provider can quote without
+		# recomputing weights (packaging picked by Glia's packing practice)
+		"shipping_estimate": _shipping_estimate(cart),
 	}
 
 
