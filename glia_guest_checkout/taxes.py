@@ -134,7 +134,11 @@ def apply_to_sales_order(sales_order, country: str | None, state: str | None) ->
 	"""Set the destination tax template on a Sales Order about to be inserted."""
 	taxable = [row.item_code for row in sales_order.get("items", []) if is_taxable(row.item_code)]
 	if not taxable:
-		return None  # donation-only order: no tax rows at all
+		# A document template can be inherited from the quotation (or a default),
+		# so an untaxed order must strip any tax rows it arrived with.
+		sales_order.taxes_and_charges = None
+		sales_order.set("taxes", [])
+		return None
 
 	country = normalize_country(country)
 	province = normalize_state(state, country)
