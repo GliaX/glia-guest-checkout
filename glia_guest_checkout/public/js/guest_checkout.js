@@ -213,6 +213,12 @@
 
 				var values = {};
 				new FormData(form).forEach(function (value, key) { values[key] = value; });
+				var country = String(values.country || "Canada").trim().toLowerCase();
+				var isCanada = ["canada", "ca", "can"].indexOf(country) !== -1;
+				if (isCanada && !String(values.state || "").trim()) {
+					if (errorBox) { errorBox.hidden = false; errorBox.textContent = "Please choose your province so we can apply the correct tax."; }
+					return;
+				}
 				if (button) { button.disabled = true; button.textContent = "Redirecting to payment…"; }
 
 				call("glia_guest_checkout.api.guest_checkout", values)
