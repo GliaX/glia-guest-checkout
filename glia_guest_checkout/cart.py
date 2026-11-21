@@ -264,7 +264,9 @@ def add_item(item_code, qty=1, additional_notes=None, amount=None):
 				"additional_notes": additional_notes,
 			},
 		)
-	_set_line(line, line.qty, item_rate(item_code, cart.currency))
+	# use the computed rate: an explicit custom amount must not be replaced by the
+	# catalogue price of the base variant
+	_set_line(line, line.qty, rate)
 
 	count = _recalculate(cart)
 	cart.flags.ignore_permissions = True
