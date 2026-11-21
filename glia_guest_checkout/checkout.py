@@ -208,6 +208,15 @@ def place_order(data):
 
 		quotation.flags.ignore_permissions = True
 		apply_cart_settings(customer, quotation)
+		# apply_cart_settings re-prices every line from the price list, which would
+		# silently undo a custom gift amount — restore the cart's amounts.
+		rates = {line.item_code: flt(line.rate) for line in cart.get("items", [])}
+		for row in quotation.get("items", []):
+			if row.item_code in rates and flt(rates[row.item_code]) > 0:
+				row.rate = flt(rates[row.item_code])
+				row.price_list_rate = flt(rates[row.item_code])
+				row.amount = flt(row.rate) * flt(row.qty)
+		quotation.run_method("calculate_taxes_and_totals")
 		quotation.insert(ignore_permissions=True)
 		# Never let an unpriced line through to a payment: the shopper would be
 		# asked to pay 0 CAD for a real product.
@@ -221,6 +230,11 @@ def place_order(data):
 
 		sales_order = frappe.get_doc(_make_sales_order(quotation.name, ignore_permissions=True))
 		sales_order.order_type = "Shopping Cart"
+		for row in sales_order.get("items", []):
+			if row.item_code in rates and flt(rates[row.item_code]) > 0:
+				row.rate = flt(rates[row.item_code])
+				row.price_list_rate = flt(rates[row.item_code])
+				row.amount = flt(row.rate) * flt(row.qty)
 		sales_order.flags.ignore_permissions = True
 		# Canadian merchandise is taxed at the destination province; donations and
 		# exports get no tax rows. NOTE: when shipping is charged it must be added to
@@ -228,6 +242,14 @@ def place_order(data):
 		apply_to_sales_order(sales_order, data.country, data.state)
 		sales_order.insert(ignore_permissions=True)
 		sales_order.submit()
+
+		# A custom gift must never be paid at the catalogue price of the base variant.
+		if flt(cart.total) and abs(flt(sales_order.grand_total) - flt(cart.total)) > 0.01:
+			frappe.log_error(
+				f"Order {sales_order.name} total {sales_order.grand_total} != cart {cart.total}",
+				"Guest checkout amount mismatch",
+			)
+			frappe.throw("We could not confirm your amount. Please try again or email info@glia.org.")
 
 		payment_request = _payment_request(sales_order, customer, email)
 

@@ -45,8 +45,9 @@ def get_context(context):
 		frappe.set_user("Administrator")
 		if token:
 			cart = frappe.get_all("Guest Cart", filters={"order_token": token}, fields=["sales_order"], limit_page_length=1)
-			if cart and cart[0].sales_order:
-				context.summary = _order_summary(frappe.get_doc("Sales Order", cart[0].sales_order))
+			sales_order = cart[0].get("sales_order") if cart else None
+			if sales_order:
+				context.summary = _order_summary(frappe.get_doc("Sales Order", sales_order))
 		elif doctype and docname and frappe.db.exists(doctype, docname):
 			doc = frappe.get_doc(doctype, docname)
 			if doctype == "Donation":
