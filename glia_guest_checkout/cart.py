@@ -323,7 +323,7 @@ def start_donation(amount, campaign=None, currency=None):
 			frappe.throw("That appeal is not available right now.")
 
 	cart = add_item(variant, 1)
-	_set_line_rate(cart, variant, target)
+	cart = _set_line_rate(variant, target)
 	return {
 		"cart_url": "/guest_cart",
 		"item_code": variant,
@@ -345,10 +345,16 @@ def _base_variant(template_code: str):
 	return None
 
 
-def _set_line_rate(cart, item_code, rate):
-	"""Apply an explicit amount to a cart line (custom gifts)."""
+def _set_line_rate(item_code, rate):
+	"""Apply an explicit amount to a cart line (custom gifts).
+
+	add_item returns the *dict* form of the cart, so reopen the document here.
+	"""
 	from frappe.utils import flt as _flt
 
+	cart = _open_cart(create=False)
+	if not cart:
+		return get_cart()
 	for line in cart.get("items", []):
 		if line.item_code == item_code:
 			line.rate = _flt(rate)
