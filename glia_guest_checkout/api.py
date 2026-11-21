@@ -55,6 +55,16 @@ def start_one_time_donation(amount, campaign=None, currency=None):
 
 
 @frappe.whitelist(allow_guest=True)
+def item_availability(item_code):
+	"""Stock label for a product page (never blocks an unseeded catalogue)."""
+	from glia_guest_checkout.stock import availability
+
+	if not item_code:
+		frappe.throw("No product given.")
+	return availability(item_code)
+
+
+@frappe.whitelist(allow_guest=True)
 @rate_limit(key="email", ip_based=False, limit=3, seconds=3600, methods=["POST"])
 def subscribe_newsletter(email, source="Website footer", consent=None):
 	"""Validated newsletter signup with recorded CASL consent."""
@@ -71,8 +81,8 @@ def request_account_claim(email):
 
 
 @frappe.whitelist(allow_guest=True)
-def guest_checkout(email, full_name, address_line1, city, country, address_line2=None,
-                   state=None, pincode=None, phone=None):
+def guest_checkout(email, full_name, address_line1=None, city=None, country=None,
+                   address_line2=None, state=None, pincode=None, phone=None):
 	_require_guest()
 	try:
 		return place_order(

@@ -238,6 +238,11 @@ def add_item(item_code, qty=1, additional_notes=None):
 	qty = max(1, cint(qty))
 	cart = _open_cart(create=True)
 	_assert_compatible_taxability(cart, item_code)
+	from glia_guest_checkout.stock import availability
+
+	avail = availability(item_code)
+	if avail.get("enforce") and cint(qty) > avail["qty"]:
+		frappe.throw(f"Only {avail['qty']:g} of that product are left in stock.")
 	rate = item_rate(item_code, cart.currency)
 	if rate <= 0:
 		frappe.throw("This product does not have a price yet. Please contact us to order it.")
@@ -303,21 +308,56 @@ def start_donation(amount, campaign=None, currency=None):
 		frappe.throw("That appeal is not available right now.")
 
 	currency = currency or _currency()
+	if target < 1:
+		frappe.throw("The smallest gift we can accept is 1.")
+	if target > 10000:
+		frappe.throw("Please contact info@glia.org for gifts above 10,000.")
+
 	variant = donation_variant(template, target, currency)
+	exact = bool(variant)
 	if not variant:
-		frappe.throw(
-			f"We do not have a {currency} {target:.0f} option for this appeal. "
-			"Please pick one of the preset amounts, or email info@glia.org to give another amount."
-		)
+		# Custom amount: use the appeal's base variant and carry the amount on the
+		# cart line, so the quotation keeps the donor's amount rather than a preset.
+		variant = _base_variant(template)
+		if not variant:
+			frappe.throw("That appeal is not available right now.")
 
 	cart = add_item(variant, 1)
+	_set_line_rate(cart, variant, target)
 	return {
 		"cart_url": "/guest_cart",
 		"item_code": variant,
 		"amount": target,
 		"currency": currency,
+		"preset": exact,
 		"cart": cart,
 	}
+
+
+def _base_variant(template_code: str):
+	"""A priced variant we can put a custom amount on (or the template itself)."""
+	variants = frappe.get_all("Item", filters={"variant_of": template_code, "disabled": 0},
+	                          pluck="name", limit=1)
+	if variants:
+		return variants[0]
+	if frappe.db.exists("Item", template_code):
+		return template_code
+	return None
+
+
+def _set_line_rate(cart, item_code, rate):
+	"""Apply an explicit amount to a cart line (custom gifts)."""
+	from frappe.utils import flt as _flt
+
+	for line in cart.get("items", []):
+		if line.item_code == item_code:
+			line.rate = _flt(rate)
+			line.amount = _flt(rate) * cint(line.qty)
+			break
+	_recalculate(cart)
+	cart.flags.ignore_permissions = True
+	cart.save(ignore_permissions=True)
+	return cart_to_dict(cart)
 
 
 def update_item(item_code, qty):

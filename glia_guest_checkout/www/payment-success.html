@@ -1,0 +1,28 @@
+{% extends "templates/web.html" %}
+{% block title %}{{ _("Thank you") }} — Glia{% endblock %}
+{% block page_content %}
+<section class="glia-thanks">
+	<h1 class="glia-h1">{{ _("Thank you") }}</h1>
+	{% if summary %}
+	<p class="glia-thanks__lead">
+		{{ _("Your payment was received.") }}
+		<strong>{{ summary.currency }} {{ "%.2f"|format(summary.amount) }}</strong>
+		{% if summary.kind == "donation" %}
+			{{ _("— your gift supports open-source medical devices and training.") }}
+		{% else %}
+			{{ _("— we'll email you as soon as it ships.") }}
+		{% endif %}
+	</p>
+	<p class="glia-thanks__ref">{{ _("Reference") }}: {{ summary.reference }}{% if summary.date %} · {{ summary.date }}{% endif %}</p>
+	{% if summary.order_token %}
+	<p><a class="glia-btn" href="/guest_order?token={{ summary.order_token }}">{{ _("View your order") }}</a></p>
+	{% endif %}
+	{% else %}
+	<p class="glia-thanks__lead">{{ _("Your payment was received. A confirmation email is on its way.") }}</p>
+	{% endif %}
+	<p class="glia-thanks__help">
+		{{ _("Questions? Email") }} <a href="mailto:info@glia.org">info@glia.org</a>.
+		<a href="/">{{ _("Back to the homepage") }}</a>
+	</p>
+</section>
+{% endblock %}

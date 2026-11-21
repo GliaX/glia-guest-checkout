@@ -147,19 +147,23 @@ def place_order(data):
 	validate_email_address(email, throw=True)
 	if not full_name:
 		full_name = email.split("@")[0]
-	if not (data.address_line1 or "").strip():
-		frappe.throw("Please enter a shipping address.")
-	if not (data.city or "").strip():
-		frappe.throw("Please enter a city.")
-	if not (data.country or "").strip():
-		data.country = "Canada"
-
-	# Tax is charged at the destination province, so the address must carry the
-	# canonical name (Tax Rules match on it) and Canada needs a province.
-	data.country = normalize_country(data.country)
-	data.state = normalize_state(data.get("state"), data.country) or ""
-	if data.country == "Canada" and not data.state:
-		frappe.throw("Please choose your province so we can apply the correct tax.")
+	# Gifts need no shipping address at all; merchandise does, because it also
+	# decides the tax province.
+	needs_address = any(is_taxable(line.item_code) for line in cart.get("items", []))
+	if needs_address:
+		if not (data.address_line1 or "").strip():
+			frappe.throw("Please enter a shipping address.")
+		if not (data.city or "").strip():
+			frappe.throw("Please enter a city.")
+		if not (data.country or "").strip():
+			data.country = "Canada"
+		data.country = normalize_country(data.country)
+		data.state = normalize_state(data.get("state"), data.country) or ""
+		if data.country == "Canada" and not data.state:
+			frappe.throw("Please choose your province so we can apply the correct tax.")
+	else:
+		data.country = normalize_country(data.get("country")) if data.get("country") else None
+		data.state = normalize_state(data.get("state"), data.country) if data.get("state") else None
 
 	webshop = frappe.get_cached_doc("Webshop Settings")
 	currency = cart.currency or frappe.db.get_value("Company", webshop.company, "default_currency") or "CAD"
@@ -170,7 +174,7 @@ def place_order(data):
 		customer, contact = _website_email(full_name, email)
 		if not contact:
 			contact = _make_contact(customer, email, full_name)
-		address = _make_address(customer, data)
+		address = _make_address(customer, data) if needs_address else None
 		quotation = frappe.new_doc("Quotation")
 		quotation.update(
 			{
@@ -183,10 +187,11 @@ def place_order(data):
 				"selling_price_list": webshop.price_list or "Standard Selling",
 				"contact_person": contact.name,
 				"contact_email": email,
-				"customer_address": address.name,
-				"shipping_address_name": address.name,
 			}
 		)
+		if address:
+			quotation.customer_address = address.name
+			quotation.shipping_address_name = address.name
 		for line in cart.get("items", []):
 			quotation.append(
 				"items",
@@ -194,6 +199,8 @@ def place_order(data):
 					"item_code": line.item_code,
 					"item_name": line.item_name,
 					"qty": line.qty,
+					"rate": flt(line.rate),
+					"price_list_rate": flt(line.rate),
 					"warehouse": valid_warehouse(line.warehouse),
 					"additional_notes": line.additional_notes,
 				},
