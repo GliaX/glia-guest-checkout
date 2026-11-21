@@ -38,7 +38,11 @@ def get_context(context):
 	doctype = frappe.form_dict.get("doctype")
 	docname = frappe.form_dict.get("docname")
 	token = frappe.form_dict.get("token")
+	# The page is served to guests; the referenced documents are not guest-readable,
+	# so look them up with desk permissions and restore the session afterwards.
+	original_user = frappe.session.user
 	try:
+		frappe.set_user("Administrator")
 		if token:
 			cart = frappe.get_all("Guest Cart", filters={"order_token": token}, fields=["sales_order"], limit_page_length=1)
 			if cart and cart[0].sales_order:
@@ -58,3 +62,5 @@ def get_context(context):
 	except Exception:
 		frappe.log_error(frappe.get_traceback(), "payment-success page")
 		context.summary = None
+	finally:
+		frappe.set_user(original_user)
