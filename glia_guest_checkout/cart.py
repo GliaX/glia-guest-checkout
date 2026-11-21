@@ -322,7 +322,7 @@ def start_donation(amount, campaign=None, currency=None):
 		if not variant:
 			frappe.throw("That appeal is not available right now.")
 
-	cart = add_item(variant, 1, amount=None if exact else target)
+	cart = add_item(variant, 1, amount=(None if exact else target))
 	return {
 		"cart_url": "/guest_cart",
 		"item_code": variant,
