@@ -18,48 +18,50 @@ def record_interest(name: str, email: str, skills: str | None = None, message: s
 	validate_email_address(email, throw=True)
 	name = (name or "").strip() or email.split("@")[0]
 
-	existing = frappe.db.get_value("Lead", {"email_id": email}, "name")
+	# one record per email: repeat sign-ups update the existing row
+	existing = frappe.db.get_value("Volunteer Interest", {"email": email}, "name")
 	if existing:
-		lead = frappe.get_doc("Lead", existing)
-		lead.status = lead.status or "Open"
+		doc = frappe.get_doc("Volunteer Interest", existing)
 	else:
-		lead = frappe.new_doc("Lead")
-		lead.email_id = email
-		lead.lead_name = name[:140]
-		lead.company_name = ""
-		lead.source = "Volunteer"
-		lead.status = "Open"
-	lead.notes = ((lead.notes or "") + f"\n\nVolunteer interest:\nSkills: {skills or '-'}\nMessage: {message or '-'}").strip()[:5000]
-	lead.flags.ignore_permissions = True
-	lead.save(ignore_permissions=True) if existing else lead.insert(ignore_permissions=True)
+		doc = frappe.new_doc("Volunteer Interest")
+	doc.full_name = name[:140]
+	doc.email = email
+	if skills:
+		doc.skills = skills[:1000]
+	if message:
+		doc.message = message[:5000]
+	doc.status = doc.status or "New"
+	doc.flags.ignore_permissions = True
+	x = doc.save(ignore_permissions=True) if existing else doc.insert(ignore_permissions=True)
+	doc = x
 
 	frappe.enqueue(
 		"glia_guest_checkout.volunteer.notify_team",
-		lead_name=lead.name,
+		interest_name=doc.name,
 		queue="short",
 		enqueue_after_commit=True,
 	)
-	return {"ok": True, "lead": lead.name}
+	return {"ok": True, "interest": doc.name}
 
 
-def notify_team(lead_name: str):
-	lead = frappe.get_doc("Lead", lead_name)
+def notify_team(interest_name: str):
+	interest = frappe.get_doc("Volunteer Interest", interest_name)
 	message = f"""
 	<div style="font-family:Ubuntu,Arial,sans-serif;color:#032e38;max-width:560px">
 	  <h2 style="margin:0 0 12px">New volunteer interest</h2>
-	  <p><strong>{escape_html(lead.lead_name)}</strong> · {escape_html(lead.email_id)}</p>
-	  <p>{escape_html(lead.notes or "")}</p>
-	  <p style="color:#5b6b70;font-size:13px">Recorded in ERPNext as Lead {escape_html(lead.name)}.</p>
+	  <p><strong>{escape_html(interest.full_name)}</strong> · {escape_html(interest.email)}</p>
+	  <p>{escape_html(interest.skills or "" or "")}</p>
+	  <p style="color:#5b6b70;font-size:13px">Recorded in ERPNext as Lead {escape_html(interest.name)}.</p>
 	</div>
 	"""
 	try:
 		frappe.sendmail(
 			recipients=["info@glia.org"],
-			subject=f"Volunteer interest: {lead.lead_name}",
+			subject=f"Volunteer interest: {interest.full_name}",
 			message=message,
 			reference_doctype="Lead",
-			reference_name=lead.name,
+			reference_name=interest.name,
 			now=True,
 		)
 	except Exception:
-		frappe.log_error(frappe.get_traceback(), f"Volunteer notification failed ({lead.name})")
+		frappe.log_error(frappe.get_traceback(), f"Volunteer notification failed ({interest.name})")

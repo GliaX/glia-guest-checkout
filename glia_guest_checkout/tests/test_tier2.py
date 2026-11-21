@@ -17,11 +17,18 @@ class TestVolunteer(unittest.TestCase):
 	def test_interest_is_recorded_and_notified(self):
 		from glia_guest_checkout.volunteer import notify_team, record_interest
 
-		# notification is deferred to a worker; here we just verify the Lead shape
 		source = open(os.path.join(os.path.dirname(__file__), "..", "volunteer.py")).read()
-		self.assertIn('lead.source = "Volunteer"', source)
+		self.assertIn('"Volunteer Interest"', source)
 		self.assertIn("notify_team", source)
+		self.assertTrue(callable(record_interest))
 		self.assertTrue(callable(notify_team))
+
+	def test_doctype_exists_in_app(self):
+		import json
+		path = os.path.join(os.path.dirname(__file__), "..", "glia_guest_checkout", "doctype",
+		                    "volunteer_interest", "volunteer_interest.json")
+		data = json.load(open(path))
+		self.assertEqual(data["name"], "Volunteer Interest")
 
 
 class TestCampaignAttribution(unittest.TestCase):
