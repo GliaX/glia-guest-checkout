@@ -50,7 +50,7 @@ def notify_team(interest_name: str):
 	<div style="font-family:Ubuntu,Arial,sans-serif;color:#032e38;max-width:560px">
 	  <h2 style="margin:0 0 12px">New volunteer interest</h2>
 	  <p><strong>{escape_html(interest.full_name)}</strong> · {escape_html(interest.email)}</p>
-	  <p>{escape_html(interest.skills or "" or "")}</p>
+	  <p>{escape_html(interest.skills or "")}</p>
 	  <p style="color:#5b6b70;font-size:13px">Recorded in ERPNext as Lead {escape_html(interest.name)}.</p>
 	</div>
 	"""
@@ -59,7 +59,7 @@ def notify_team(interest_name: str):
 			recipients=["info@glia.org"],
 			subject=f"Volunteer interest: {interest.full_name}",
 			message=message,
-			reference_doctype="Lead",
+			reference_doctype="Volunteer Interest",
 			reference_name=interest.name,
 			now=True,
 		)
