@@ -35,13 +35,12 @@ def get_context(context):
 	context.no_cache = 1
 	context.title = "Thank you"
 	context.summary = None
-	context.search_ok = True
 	doctype = frappe.form_dict.get("doctype")
 	docname = frappe.form_dict.get("docname")
 	token = frappe.form_dict.get("token")
 	try:
 		if token:
-			cart = frappe.get_all("Guest Cart", filters={"order_token": token}, fields=["sales_order"], limit=1)
+			cart = frappe.get_all("Guest Cart", filters={"order_token": token}, fields=["sales_order"], limit_page_length=1)
 			if cart and cart[0].sales_order:
 				context.summary = _order_summary(frappe.get_doc("Sales Order", cart[0].sales_order))
 		elif doctype and docname and frappe.db.exists(doctype, docname):
