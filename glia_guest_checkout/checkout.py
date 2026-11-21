@@ -12,7 +12,7 @@ from erpnext.selling.doctype.quotation.quotation import _make_sales_order
 from webshop.webshop.shopping_cart.cart import apply_cart_settings
 
 from glia_guest_checkout.cart import _open_cart, set_cart_cookie, valid_warehouse
-from glia_guest_checkout.taxes import apply_to_sales_order, normalize_country, normalize_state
+from glia_guest_checkout.taxes import (apply_to_sales_order, is_taxable, normalize_country, normalize_state)
 
 
 def _website_email(customer_name, email):
