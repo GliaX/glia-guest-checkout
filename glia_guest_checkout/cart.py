@@ -305,9 +305,13 @@ def start_donation(amount, campaign=None, currency=None):
 	if target <= 0:
 		frappe.throw("Choose an amount to continue.")
 
-	template = campaign or "donate-glia-project"
+	appeal = "donate-glia-project"
+	template = appeal
 	if not frappe.db.exists("Item", template):
 		frappe.throw("That appeal is not available right now.")
+	# `campaign` is attribution (which project the donor meant), not the priced
+	# appeal item; keep it on the line so the Donation record can carry it.
+	campaign_note = f"campaign:{(campaign or '').strip()}" if campaign else None
 
 	currency = currency or _currency()
 	if target < 1:
@@ -324,7 +328,7 @@ def start_donation(amount, campaign=None, currency=None):
 		if not variant:
 			frappe.throw("That appeal is not available right now.")
 
-	cart = add_item(variant, 1, amount=(None if exact else target))
+	cart = add_item(variant, 1, additional_notes=campaign_note, amount=(None if exact else target))
 	return {
 		"cart_url": "/guest_cart",
 		"item_code": variant,

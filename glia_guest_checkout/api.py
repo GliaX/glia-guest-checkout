@@ -55,6 +55,16 @@ def start_one_time_donation(amount, campaign=None, currency=None):
 
 
 @frappe.whitelist(allow_guest=True)
+@rate_limit(key="email", ip_based=False, limit=3, seconds=3600, methods=["POST"])
+def volunteer_interest(name=None, email=None, skills=None, message=None):
+	"""Volunteer sign-up: recorded in the CRM and emailed to the team."""
+	_require_guest()
+	from glia_guest_checkout.volunteer import record_interest
+
+	return record_interest(name, email, skills, message)
+
+
+@frappe.whitelist(allow_guest=True)
 def item_availability(item_code):
 	"""Stock label for a product page (never blocks an unseeded catalogue)."""
 	from glia_guest_checkout.stock import availability

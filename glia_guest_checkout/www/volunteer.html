@@ -1,0 +1,57 @@
+{% extends "templates/web.html" %}
+{% block title %}Volunteer — Glia{% endblock %}
+{% block page_content %}
+<section class="glia-volunteer">
+	<h1 class="glia-h1">Volunteer with Glia</h1>
+	<p class="glia-lead">Glia runs on people who give their time — clinicians, engineers, organisers and translators. Tell us what you can offer and we will find the right thing.</p>
+	<div class="glia-volunteer__grid">
+		{% for role in roles %}
+		<article class="glia-volunteer__role">
+			<h2>{{ role.title }}</h2>
+			<p>{{ role.text }}</p>
+		</article>
+		{% endfor %}
+	</div>
+	<form id="glia-volunteer-form" class="glia-volunteer__form" novalidate>
+		<h2>Raise your hand</h2>
+		<div class="glia-volunteer__fields">
+			<label>Name<input name="name" type="text" autocomplete="name" required></label>
+			<label>Email<input name="email" type="email" autocomplete="email" required></label>
+		</div>
+		<label>What can you help with?<textarea name="skills" rows="3" placeholder="e.g. emergency medicine training, CAD, social media, translation"></textarea></label>
+		<label>Anything else?<textarea name="message" rows="3" placeholder="Availability, location, links…"></textarea></label>
+		<button type="submit" class="glia-btn">Send</button>
+		<p id="glia-volunteer-status" class="glia-volunteer__status" role="status"></p>
+	</form>
+</section>
+<script>
+(function () {
+  var form = document.getElementById('glia-volunteer-form');
+  if (!form) return;
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var status = document.getElementById('glia-volunteer-status');
+    var btn = form.querySelector('button[type=submit]');
+    var values = {};
+    new FormData(form).forEach(function (v, k) { values[k] = v; });
+    btn.disabled = true; status.textContent = 'Sending…';
+    fetch('/api/method/glia_guest_checkout.api.volunteer_interest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Frappe-CSRF-Token': 'None' },
+      credentials: 'same-origin',
+      body: JSON.stringify(values)
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      if (d && d.message && d.message.ok) {
+        form.reset(); status.textContent = 'Thank you — we will be in touch.';
+      } else {
+        var msg = 'Could not send that. Please email info@glia.org.';
+        try { msg = JSON.parse(JSON.parse(d._server_messages)[0]).message || msg; } catch (e) {}
+        status.textContent = msg; btn.disabled = false;
+      }
+    }).catch(function () {
+      status.textContent = 'Could not send that. Please email info@glia.org.'; btn.disabled = false;
+    });
+  });
+})();
+</script>
+{% endblock %}
