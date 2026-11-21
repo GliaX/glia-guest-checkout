@@ -219,7 +219,7 @@ def get_cart():
 	return cart_to_dict(cart)
 
 
-def add_item(item_code, qty=1, additional_notes=None):
+def add_item(item_code, qty=1, additional_notes=None, amount=None):
 	if not item_code or not frappe.db.exists("Item", item_code):
 		frappe.throw("That product is no longer available.")
 	item = frappe.get_cached_doc("Item", item_code)
@@ -243,7 +243,7 @@ def add_item(item_code, qty=1, additional_notes=None):
 	avail = availability(item_code)
 	if avail.get("enforce") and cint(qty) > avail["qty"]:
 		frappe.throw(f"Only {avail['qty']:g} of that product are left in stock.")
-	rate = item_rate(item_code, cart.currency)
+	rate = flt(amount) if amount else item_rate(item_code, cart.currency)
 	if rate <= 0:
 		frappe.throw("This product does not have a price yet. Please contact us to order it.")
 	line = next((row for row in cart.items if row.item_code == item_code), None)
@@ -322,8 +322,7 @@ def start_donation(amount, campaign=None, currency=None):
 		if not variant:
 			frappe.throw("That appeal is not available right now.")
 
-	cart = add_item(variant, 1)
-	cart = _set_line_rate(variant, target)
+	cart = add_item(variant, 1, amount=None if exact else target)
 	return {
 		"cart_url": "/guest_cart",
 		"item_code": variant,
@@ -343,27 +342,6 @@ def _base_variant(template_code: str):
 	if frappe.db.exists("Item", template_code):
 		return template_code
 	return None
-
-
-def _set_line_rate(item_code, rate):
-	"""Apply an explicit amount to a cart line (custom gifts).
-
-	add_item returns the *dict* form of the cart, so reopen the document here.
-	"""
-	from frappe.utils import flt as _flt
-
-	cart = _open_cart(create=False)
-	if not cart:
-		return get_cart()
-	for line in cart.get("items", []):
-		if line.item_code == item_code:
-			line.rate = _flt(rate)
-			line.amount = _flt(rate) * cint(line.qty)
-			break
-	_recalculate(cart)
-	cart.flags.ignore_permissions = True
-	cart.save(ignore_permissions=True)
-	return cart_to_dict(cart)
 
 
 def update_item(item_code, qty):

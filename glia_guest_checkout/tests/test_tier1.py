@@ -21,6 +21,11 @@ class TestCustomAmount(unittest.TestCase):
 		self.assertTrue(frappe.db.exists("Item", "donate-glia-project"))
 		self.assertTrue(cart._base_variant("donate-glia-project"))
 
+	def test_add_item_accepts_an_amount_override(self):
+		import inspect
+
+		self.assertIn("amount", inspect.signature(cart.add_item).parameters)
+
 
 class TestStock(unittest.TestCase):
 	def test_unseeded_stock_does_not_block_sales(self):
